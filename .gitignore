@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+*.sqlite3
+*.db
+.env
+
+# Node.js
+node_modules/
+build/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Docker
+docker-compose.yml
+*.env
+
+# Logs
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
