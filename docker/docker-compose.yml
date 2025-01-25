@@ -1,0 +1,88 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  influxdb:
+    image: influxdb:latest
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+    environment:
+      INFLUXDB_DB: flood_monitoring
+      INFLUXDB_ADMIN_USER: admin
+      INFLUXDB_ADMIN_PASSWORD: admin123  # Change to a secure password
+      INFLUXDB_USER: user
+      INFLUXDB_USER_PASSWORD: user123  # Change to a secure password
+
+  postgres:
+    image: postgis/postgis:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123  # Change to a secure password
+      POSTGRES_DB: flood_monitoring
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  cassandra:
+    image: cassandra:latest
+    environment:
+      - CASSANDRA_CLUSTER_NAME=FloodMonitoringCluster
+      - CASSANDRA_DC=DC1
+      - CASSANDRA_RACK=Rack1
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra-data:/var/lib/cassandra
+
+  spark:
+    image: bitnami/spark:latest
+    ports:
+      - "8081:8080"  # Spark Web UI
+      - "7077:7077"  # Spark Master
+    environment:
+      - SPARK_MODE=master
+    depends_on:
+      - kafka
+      - postgres
+      - influxdb
+      - cassandra
+
+  spark-worker:
+    image: bitnami/spark:latest
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+    depends_on:
+      - spark
+
+  backend:
+    build: ../backend
+    ports:
+      - "5000:5000"
+    depends_on:
+      - cassandra
+      - influxdb
+      - postgres
+
+volumes:
+  influxdb-data:
+  postgres-data:
+  cassandra-data:
